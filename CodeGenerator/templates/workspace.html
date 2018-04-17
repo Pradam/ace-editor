@@ -1,0 +1,462 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title_block %} Workspace {% endblock %}
+
+{% block extrahead %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="{% static 'style.css'%}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/font-awesome.min.css'%}">
+<script defer src="{% static 'js/fontawesome-free-5.0.9/svg-with-js/js/fontawesome-all.js' %}"></script>
+<style>
+body {font-family: Arial, Helvetica, sans-serif;}
+
+.header {
+    background-color: #3465a4;
+    color: #ffffff;
+    padding: 15px;
+    height: 60px; 
+}
+
+.header h2{
+	color:#fff;
+}
+
+/* Full-width input fields */
+input[type=text], input[type=password] {
+    width: auto;
+    padding: 5px 10px;
+    margin: 8px 0;
+    display: block;
+	border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+/* Set a style for all buttons */
+button {
+    background-color: #4CAF50;
+	color: white;
+    padding: 5px 10px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: auto;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+
+/* Center the image and position the close button */
+img {
+    text-align: center;
+    margin: 24px 0 12px 0;
+   
+}
+
+.avatar {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 20%;
+}
+
+.formd {
+    display: block;
+}
+
+.workspace_view{
+	border:1px solid #eee;
+	border-radius:2px;
+}
+
+.workspace, .testsuite {
+    height: 550px;
+    overflow-y: auto;
+   	border:1px solid #eee;
+	border-radius:2px;
+}
+.workspace h4, .testsuite h4{
+	width:100%;
+	padding:10px;
+	background-color: #3465a4;
+	color:#fff;
+}
+
+.workspace a, .testsuite a {
+    background-color: #eee;
+    color: black;
+    display: block;
+    padding: 12px;
+    text-decoration: none;
+    outline:none;
+}
+
+.workspace a:hover, .testsuite a:hover {
+    background-color: #ccc;
+}
+
+.workspace a.active, .testsuite a.active {
+    background-color: #555;
+    color: white;
+}
+
+#tempmsg{
+	text-align:center;
+	position:inherit;
+	margin-top:25%;
+}
+
+#popups{
+	display:none;
+	position:fixed;
+	z-index:999;
+	left:0;
+	top:0;
+	width:100%;
+	height:100%;
+	overflow:auto;
+	background: rgb(0,0,0)  transparent;
+	background: rgba(0,0,0,0.4);	
+}
+
+
+#addworkspace ,#addtestsuite{
+    z-index: 1000;
+    height: 360px;
+    border: 1px single #65656B;
+    width: 640px;
+    background-color: white;
+    border-radius: 5px 5px;
+	-moz-border-radius: 5px; -webkit-border-radius: 5px; 
+    position: absolute;
+    display: none;
+    color: white;
+    top: 100px;
+    left: 50%;
+    margin-left: -320px;
+    
+}
+
+/*#allfeature #close_img, #defaultfeature #close_img, #szpostcommitfailure #close_img, #appostcommitfailure #close_img, #szdailyfailure #close_img, #apdailyfailure #close_img{*/
+#popups #close_img{
+	float:right;
+	margin-right:-20px;
+	margin-top:-20px;
+}
+
+/*#allfeature h2, #defaultfeature h2, #szpostcommitfailure h2, #appostcommitfailure h2, #szdailyfailure h2, #apdailyfailure h2{*/
+#popups h2{
+	color:white;
+	text-decoration:none;
+	font-size:20px;
+	font-weight:normal;
+	padding:8px 20px;	
+	width:100%;
+	background-color:#3465a4;
+	border-radius: 5px 5px 0px 0px;
+	-moz-border-radius: 5px 5px 0px 0px; -webkit-border-radius: 5px 5px 0px 0px; 
+}
+
+#addworkspace table, #addtestsuite table{
+	padding-top:10px;
+	border:0px;	
+	width:auto;
+}
+
+ /*#szpostcommitfailure table, #appostcommitfailure table, #szdailyfailure table, #apdailyfailure table{*/
+ #popups table{
+ 
+ 	width:auto;
+ 	margin-left:20px;
+ 	margin-right:20px;
+ 	margin-top:10px;
+ 	margin-bottom:20px;
+ 	
+ }
+
+#addworkspace td, #addtestsuite td{
+	border:0px;
+	width:50%;
+	text-align:left;
+	padding:0px 30px;
+	color:#333;
+}
+
+/*#szpostcommitfailure td, #appostcommitfailure td, #szdailyfailure td, #apdailyfailure td{*/
+#popups td{
+	min-width:100px;
+	padding-left:10px;
+	padding-right:10px;
+}
+
+
+
+
+
+</style>
+
+
+{% endblock %}
+
+{% block extrajs %}
+var workspace=null;
+var testsuite=null;
+$(document).ready( function (){
+
+    jQuery('.workspace a').on('click', function(e)  {
+ 
+        // Change/remove current tab to active
+        jQuery(this).addClass('active').siblings().removeClass('active');
+ 
+        e.preventDefault();
+    });
+    
+});
+
+function close_allpopups(){
+	document.getElementById("popups").style.display="none";
+}
+document.onkeydown=function(e){
+	var e=window.event || e
+	if(e.keyCode == 27){
+		document.getElementById("popups").style.display="none";
+	}
+}
+function open_popups(popup){
+ var popup_div = {0:"addworkspace",1:"addtestsuite"}
+	document.getElementById("popups").style.display='block';
+	for(key in popup_div){
+		document.getElementById(popup_div[key]).style.display='none';
+	}
+
+	document.getElementById(popup).style.display="block";
+}               
+
+function getWS(){
+	$.ajaxSetup({
+           headers:
+           { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+       });
+       $.get("/getwslist",
+       {},
+       function(Object,status){
+           str='';
+           ws_list= Object["ws_list"]
+	   console.log("WS LIST" + ws_list)
+           for(i=0; i < ws_list.length;i++){
+           	str+="<a href='#' onclick=\"getTS(\'" + ws_list[i] + "\')\">"+ ws_list[i]+"</a>";
+           }
+           str+="<a href='#'  onclick=\"open_popups('addworkspace')\">+ Add Workspace</a>";
+           $(".workspace_list").html(str);
+           
+       });
+}
+
+function createWS(){
+        var x = document.getElementById("workspaceform");
+	var ws_details = {}
+       	var num_of_inputs;
+       	for (num_of_inputs = 0; num_of_inputs < x.length ;num_of_inputs++) {
+	console.log(x.elements[num_of_inputs].name, x.elements[num_of_inputs].value)
+	ws_details[x.elements[num_of_inputs].name] = x.elements[num_of_inputs].value;
+	};
+	console.log(ws_details);
+	$.ajax({
+           headers:
+           { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+	   async: false,
+	   url: '/createWorkspace', // form action url
+	   type: 'POST', // form submit method get/post
+	   dataType: 'html', // request type html/json/xml
+	   data: ws_details
+       }),
+       getWS();
+}
+function createTS(workspace_name){
+	console.log(workspace);
+        var x = document.getElementById("testsuiteform");
+	var ts_details = {}
+       	var num_of_inputs;
+       	for (num_of_inputs = 0; num_of_inputs < x.length ;num_of_inputs++) {
+	console.log(x.elements[num_of_inputs].name, x.elements[num_of_inputs].value)
+	ts_details[x.elements[num_of_inputs].name] = x.elements[num_of_inputs].value;
+	};
+	console.log(ts_details);
+	$.ajax({
+           headers:
+           { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+	   url: '/createTestsuite/?workspacename=' + workspace, // form action url
+	   type: 'POST', // form submit method get/post
+	   dataType: 'html', // request type html/json/xml
+	   data: ts_details
+       }),
+       getTS(workspace);
+}
+function getTS(workspace_name){
+	workspace= workspace_name;
+       	console.log("GETTS" + workspace_name)
+	$.ajaxSetup({
+           headers:
+           { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+       });
+       $.get("/gettslist",
+       {
+         workspacename: workspace_name
+       },
+       function(Object,status){
+           str='';
+           if(Object["ts_list"]){
+           //ts_list= Object["ts_list"].split(',')
+           ts_list= Object["ts_list"]
+           for(i=0; i < ts_list.length;i++){
+           	str+="<a href='#' onclick='tsclick(this)'>"+ ts_list[i]+"</a>";
+           }
+           }
+           str+="<a href='#' onclick=\"open_popups('addtestsuite')\">+ Add Testsuite</a>";
+           $(".testsuite h4").html("Testsuite: ("+workspace_name+")")
+           $(".testsuite_list").html(str);
+           
+       });
+}
+
+function tsclick(obj){
+ 
+        // Change/remove current tab to active
+        jQuery(obj).addClass('active').siblings().removeClass('active');
+        testsuite = jQuery(obj).html();
+        
+ }
+
+function EditTC(){
+	if(workspace!=null && testsuite!=null){
+		
+    $('#temp').html('<form method="post" action="/editor/" name="editor"><input type="text" name="workspace" value="' + workspace + '" /><input type="text" name="testsuite" value="' + testsuite + '" /></form>');
+    document.forms['editor'].submit();
+	}
+}
+
+{% endblock %}
+
+{% block body_block%} 
+
+
+<div id="popups">
+
+
+
+<div id="addworkspace">
+<a href="javascript:close_allpopups()">
+<img id="close_img" src="/static/image/close.png" alt="close">
+</a>
+	<h2>ADD Workspace</h2><hr>
+	<form class="form" id="workspaceform">	
+	<table>
+		<tr>
+			<td><label for="uname">Name</label></td>
+			<td><input type="text" placeholder="Workspace Name" name="ws_name" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">IP</label></td>
+			<td><input type="text" placeholder="Workspace IP" name="ws_ip" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Username</label></td>
+			<td><input type="text" placeholder="Workspace Username" name="ws_uname" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Password</label></td>
+			<td><input type="text" placeholder="Workspace Password" name="ws_passwd" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Path</label></td>
+			<td><input type="text" placeholder="Workspace Path" name="ws_path" required></td>
+		</tr>
+		<tr> 
+			<td></td>
+			<td><button type="button" id="CreateWS" onclick='createWS()'>Create</button></td>
+		</tr>
+	</table>
+	</form>
+	</div>
+	
+<div id="addtestsuite">
+<a href="javascript:close_allpopups()">
+<img id="close_img" src="/static/image/close.png" alt="close">
+</a>
+	<h2>Add Testsuite</h2><hr>
+	<form class="form" id="testsuiteform">	
+	<table>
+		<tr>
+			<td><label for="uname">Name</label></td>
+			<td><input type="text" placeholder="Testsuite Name" name="ts_name" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Default Library file</label></td>
+			<td><input type="text" value="PublicAPI.py | /root/workspace/tools/Rwbot/lib/python/lib/" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Library file</label></td>
+			<td><input type="text" placeholder="Testsuite Library | file path" name="ts_lib" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Keyword file</label></td>
+			<td><input type="text" placeholder="Testsuite keyword | file Path" name="ts_key" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Variable file</label></td>
+			<td><input type="text" placeholder="Testsuite variable | file Path" name="ts_var" required></td>
+		</tr>
+		<tr> 
+			<td></td>
+			<td><button type="button" id="CreateTS" onclick='createTS()'>Create</button></td>
+		</tr>
+	</table>
+	</form>
+	
+	</div>
+	
+	
+</div>
+
+
+
+
+<div class='row header'>
+	<div  class="col-6 col-ld-6 col-m-12 ">
+	  <h2>Automation Accelerator</h2>
+	</div> 
+	<div class="col-6 col-ld-6 col-m-12">
+		<div style="float:right;width:100px;color:#fff;">{{username|title}}&nbsp;&nbsp;<a href='/logout'>Logout</a></div>
+	</div>
+	
+</div>
+<br><br>
+
+<div class="row">
+	<div class="col-ld-2 col-2"></div> 
+	<div class="col-ld-8 col-8 workspace_view">
+  		<div class="row">
+  		<div class="col-6 col-ld-6 workspace">
+  		<h4>Workspace:</h4>
+  		<div class='workspace_list'>
+  		{% for workspace in workspaces %}
+  		<a href='#' onclick="getTS('{{workspace.name}}')">{{workspace.name|title}}<i style='float:right' class="fa fa-pencil-alt"></i></a>
+  		{% endfor %}
+  		<a href='#' onclick="open_popups('addworkspace')">+ Add Workspace</a>
+  		</div>
+  		</div>
+  		<div class="col-ld-6 col-6 testsuite">
+  		<h4>Testsuite:</h4>
+  		<div class='testsuite_list'><div id='tempmsg'>Select workspace</div></div>
+  		</div>
+	</div>
+	<div style='float:right;color:white;'><button onclick="EditTC()" style='color:#fff;'><i class="fa fa-edit"></i> Editor</button>
+
+	</div>
+	</div>
+<div class="col-ld-2 col-2"></div>
+</div>
+<div style='display:none;' id="temp"></div>
+	
+{% endblock %}

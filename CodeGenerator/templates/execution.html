@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title_block %} Execution Window {% endblock %}
+
+{% block extrahead %}
+
+  <meta name="csrf-token" content="{{ csrf_token }}"/>
+
+  <script src="{% static 'ace/build/src/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+  <script src="{% static 'ace/build/src/ace_grammar.min.js' %}"></script>
+  <script src="{% static 'ace/build/src/robot_grammar.js' %}"></script>
+  <script src="{% static 'ace/build/src/ext-language_tools.js' %}" type="text/javascript"></script>
+  <style type="text/css" media="screen">  
+      
+      body {
+	     font-family: Arial, Helvetica, sans-serif;
+	     font-size: 12px;
+      }
+      a {
+	     text-decoration: none
+      }   
+     .exec_status {
+      		height:600px;
+      		display:block;
+      		overflow-y:auto;
+      }
+      #editor {
+          position:relative;
+          height:100%;
+      }
+      #robot_code{
+          display:none;
+      }
+      .execution_fail{
+	  position:absolute;
+	  background:rgba(200,150,150,0.3);
+	  z-index:20
+      }
+      .execution_pass{
+	  position:absolute;
+	  background:rgba(150,200,150,0.3);
+	  z-index:20
+      }
+     button {
+        background-color: #4CAF50;
+	color: white;
+        padding: 5px 10px;
+        margin: 8px 0;
+        border: none;
+        cursor: pointer;
+        width: auto;
+    }
+  </style>
+{% endblock %}
+
+
+{% block extrajs %}
+$(document).ready( function (){
+
+    editor = ace.edit("editor");
+    editor.setTheme("ace/theme/xcode");
+    session = editor.getSession();
+    //Get the robot Mode
+    mode = AceGrammar.getMode( robot_grammar );
+    //Enabe External Mode
+    ace.config.loadModule("ace/ext/language_tools", function() {
+	editor.setOptions({ 
+	    tabSize : 4,
+	    useSoftTabs : true,
+	    showPrintMargin : false,
+	    fontSize : 12
+	});
+        //Set options for editor
+	mode.matcher( editor );
+	editor.clearSelection();
+	editor.setValue( '', -1 );
+	session.setMode( mode );
+	session.setFoldStyle("markbegin");
+    });
+    
+    var Range = ace.require('ace/range').Range;
+    var annotations = [];
+    var old_marker;
+    var testcase_range = [];
+    var keyword_range = [];
+    var search_range = [];
+    var search = {};
+ 
+    //Enable Read Only Mode
+    editor.setValue(document.getElementById("robot_code").innerHTML);
+    editor.setOptions({readOnly:true});
+    editor.clearSelection();
+    editor.gotoLine(0);	
+        
+    function get_line_position(text){
+        options = {
+            wrap:  false,
+            caseSensitive: false,
+            wholeWord: true,
+             regExp: false,
+            preventScroll: true,
+            backwards: false,
+            }
+            
+            position = editor.find(text,options);
+            if (position != null || typeof(position) != "undefined")
+                return  position.start.row;
+            else
+                return position
+        }
+        
+        function search_in_range(text,start,end){
+            //console.log(start+" "+end)
+            text = text.replace(/[ ]/g,'_');
+	    for ( l=start;l<end;l++)
+            {
+                line = editor.getSession().getLine(l);
+                if (line.toUpperCase().includes(text.toUpperCase()))
+                    return l;
+            }
+            return null;
+        }
+        
+        function array_includes(array,object){
+            for (e in array)
+                if (JSON.stringify(array[e]) === JSON.stringify(object))
+                    return true;
+            return false;
+        }
+ 
+        function sleep(milliseconds) {
+            var start = new Date().getTime();
+            for (var s = 0; s < 1e7; i++) {
+                if ((new Date().getTime() - start) > milliseconds){
+                    break;
+                }
+            }
+        }
+        
+        //section to find out all the testcase ranges
+	testcases_start = get_line_position('*** Test Case ***');
+	i = testcases_start + 1 ;
+        while(true)
+        {
+            line = editor.getSession().getLine(i);
+            if ( line.match(/\*\*\*.+\*\*\*/g) || i === editor.session.getLength())
+                break;
+            if ( line.match(/^[^ ]+.+/g) )
+                testcase_range.push({'start':i+1,'name':line})
+            i = i + 1;
+        }
+        //console.log(testcase_range);
+
+        //section to find out all the keywords ranges( uncomment this block if the testsuite has keywords sections )
+	/*
+        keyword_start = get_line_position('*** Keywords ***');
+        i = keyword_start + 1 ;
+        while(true)
+        {
+            line = editor.getSession().getLine(i);
+            // while uncommenting this block excape all the * with blackslash in the the regex
+	    if ( line.match(***+***g) || i === editor.session.getLength())
+                break;
+            if ( line.match(/^[^ ]+.+/g) )
+                keyword_range.push({'start':i+1,'name':line})
+            i = i + 1;
+        }
+        console.log(keyword_range);
+	*/
+
+        //Trigger Execution of a job
+	var job_name = "{{ job_name }}";
+	
+	$.ajaxSetup({
+            headers:
+            { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+        });
+        $.post("/execute",{ name : job_name },function(data,status){
+    	    
+	    var n = document.createElement("p");
+	    var t = document.createTextNode("Suite Status : " + data['status']);
+	    n.appendChild(t);
+	    document.getElementById('console').appendChild(n);  
+	    
+	    if ( 'job_log' in data)
+	    {
+	         var n = document.createElement("a");
+		 n.setAttribute('href', data['job_log']);       
+		 var t = document.createTextNode("Job Report : " + data['job_log']);
+	         n.appendChild(t);
+	         document.getElementById('console').appendChild(n);  
+	    }
+	    //document.getElementById('console').value= document.getElementById('console').value + '\n Job Report : ' + '<a>' + data['job_log'] + '</a>';
+        });
+
+      	$("#stop_job").click(function(){
+	    //console.log('stopped');
+	    $.ajaxSetup({
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+            });
+            $.post("/stopjob",{ name : job_name },function(data,status){
+                 
+	    	 var n = document.createElement("p");
+	         var t = document.createTextNode("Suite Execution Stopped");
+	         n.appendChild(t);
+		 document.getElementById('console').appendChild(n);  
+	    
+	    	 //document.getElementById('console').value= document.getElementById('console').value + '\n Job Execution Stopped';
+		 //console.log("Job Execution Stopped");
+            });
+	});
+	
+	//function to receive execution data every one second
+        interval_handler = setInterval(get_execution_data,1000);
+        function get_execution_data() {
+            $.ajax({
+                header: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                url: "/getExecutionData",
+                method: "GET",
+                dataType: "json"
+            })
+            .done(function(data){
+                if (data['status'] === 'pass')
+                    editor_display(data['execution_data']);
+            });
+        }
+
+        function editor_display(execution_data){
+            data = JSON.parse(execution_data);
+            //console.log(data);
+            for (d in data)
+            {
+                type = data[d]['type'];
+                suite = data[d]['suite'];
+                test = data[d]['test'];
+                keyword = data[d]['keyword'];
+
+                //remove library name from keyword
+                if (typeof(keyword) != 'undefined' && keyword.includes('.'))
+                    keyword = keyword.split('.')[1];
+
+                if(type === 'SUITE_STARTED')
+		{
+		    var n = document.createElement("p");
+	            var t = document.createTextNode("Suite Execution Started : " + suite);
+	            n.appendChild(t);
+		    document.getElementById('console').appendChild(n);  
+		    //document.getElementById('console').value= document.getElementById('console').value + '<p>' + 'Suite Execution Started : ' + suite + '</p>';
+      		    //console.log('Suite Execution Started');
+		}
+
+                if(type === 'SUITE_ENDED')
+                {
+                    //document.getElementById('console').value= document.getElementById('console').value + '\n Suite Execution Ended : ' + suite;
+		    //document.getElementById('console').value= document.getElementById('console').value + '\n Suite Status : ' + data[d]['status'];
+		    //document.getElementById('console').value= document.getElementById('console').value + '\n Suite Statistics : ' + data[d]['statistics'];
+
+	       	    //console.log('Suite Execution Complete');
+                    //console.log('Suite Status : ' + data[d]['status']);
+                    //console.log('Suite Statistics : ' + data[d]['statistics']);
+                }
+
+                if(type === 'TEST_STARTED')
+                {
+                    search_range = [];
+                    //document.getElementById('console').value= document.getElementById('console').value + '\n Test Execution Started : ' + test;
+		    //console.log('Test Started:' + test);
+                    editor.gotoLine(0);
+                    for (t in testcase_range){
+                        if (testcase_range[t]['name'].toLowerCase().trim() == test.toLowerCase().trim())
+                        {
+                            next_element = testcase_range[parseInt(t)+1];
+                            if (typeof(next_element) != "undefined")
+                                search_range.push({'start': testcase_range[t]['start'],'end': next_element['start']-2});
+                            else
+			    {
+			   	// if the testsuite has keywords section then interchange the comments on the statments below
+			    	//search_range.push({'start': testcase_range[t]['start'],'end': get_line_position('*** Keywords ***')-2});
+				search_range.push({'start': testcase_range[t]['start'],'end': editor.session.getLength()-2});
+			    }
+                        }
+                    }
+                }
+
+                if(type === 'TEST_ENDED')
+                {
+                    if(data[d]['status'] === 'FAIL')
+                    {
+                        for ( r in testcase_range)
+                        {
+                            if (testcase_range[r]['name'].toLowerCase().trim() == test.toLowerCase().trim())
+                            {
+                                annotations.push({row:testcase_range[r]['start']-1,column: 0,type:"error",text:data[d]['error']});
+                                editor.getSession().setAnnotations(annotations);
+                            }
+                        }
+                    }
+                    test = '';
+                    search_range = [];
+                }
+                
+                if(type === 'KEYWORD_STARTED')
+                {
+                    if ( test ) {
+                    for ( k in keyword_range)
+                        if ( keyword_range[k]['name'].toLowerCase().trim() == keyword.toLowerCase().trim())
+                        {
+                            next_element = keyword_range[parseInt(k)+1];
+                            if (typeof(next_element) != "undefined")
+                            {
+                                range = {'start':keyword_range[k]['start'],'end': next_element['start']-3};
+                                if (!array_includes(search_range,range))
+                                   search_range.push(range);
+                            }
+                            else
+                            {
+                                range = {'start':keyword_range[k]['start'],'end': editor.session.getLength()-1};
+                                if (!array_includes(search_range,range))
+                                   search_range.push(range);
+                            }
+                        }
+                    }
+                }
+
+                if(type === 'KEYWORD_ENDED')
+                {
+                        //console.log(JSON.stringify(search_range));
+                        search = search_range.pop();
+                        if ( test )
+                        {
+                            //resolve multiline dependencies
+                            end = 0;
+                            while(typeof(search) != "undefined" && true)
+                            {
+                                l = editor.session.getLine(search['start']+1+end);
+                                if(l.match(/[ ]+\.{3}[ ]*.*/g) || l === '' || l.match(/[ ]*#.*/g))
+                                    end = end + 1;
+                                else
+                                    break;
+                            }
+                            //console.log(keyword);
+                            x = search_in_range(keyword,search['start'],search['start']+3+end);
+                            //console.log(x);
+                            if ( x != null)
+                            {
+                                search['start'] = x + 1;
+                                //editor.session.removeMarker(old_marker);
+                                editor.gotoLine(x+1);
+                                range = new Range(x,0,x,1);
+                                if(data[d]['status'] === 'PASS')
+                                    old_marker = editor.session.addMarker(range,"execution_pass","fullLine");
+                                if(data[d]['status'] === 'FAIL')
+                                    editor.session.addMarker(range,"execution_fail","fullLine")
+                            }
+                            if (search['start'] <= search['end'])
+                                search_range.push(search);
+                        }
+                }
+ 
+                //to stop sending requests after the execution has stopped
+                if(type === 'EXECUTION_COMPLETE')
+                    clearInterval(interval_handler);
+            }
+        }
+
+
+});
+	
+{% endblock %}
+
+{% block body_block%} 
+	{% csrf_token %}
+	<pre id='robot_code'>{{ suite_content }} </pre> 
+	<div class='row'>
+	<div class='col-12 col-ld-12 col-m-12 exec_status'>
+	<div id='editor'></div>
+	</div>
+	</div>
+	<div class='row'>
+	<div class='col-12 col-ld-12 col-m-12'>
+	<button id='stop_job'>Stop Execution</button>
+	<div id='console' > </div>
+	<!-- <div id='console'> helelo </div> -->
+	</div>
+	</div>
+{% endblock %}
+

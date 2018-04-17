@@ -1,0 +1,102 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+	<properties>
+		<jenkins.model.BuildDiscarderProperty>
+			<strategy class="hudson.tasks.LogRotator">
+				<daysToKeep>-1</daysToKeep>
+				<numToKeep>5</numToKeep>
+			</strategy>
+		</jenkins.model.BuildDiscarderProperty>
+		<hudson.model.ParametersDefinitionProperty>
+			<parameterDefinitions>
+				<hudson.model.StringParameterDefinition>
+					<name>RWBOT_PATH</name>
+					<defaultValue>/var/lib/jenkins/</defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>RUN_FAILED_ONLY</name>
+					<defaultValue>no</defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>DRY_RUN</name>
+					<defaultValue>no</defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>PROJECT_NAME</name>
+					<defaultValue></defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>FEATURE_NAME</name>
+					<defaultValue></defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>RWBOT_RUN_TARGET</name>
+					<defaultValue></defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>ROBOT_FILE_NAME</name>
+					<defaultValue></defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>OUTPUT_PATH</name>
+					<defaultValue></defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>UPLOAD_TL</name>
+					<defaultValue>no</defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>INCLUDE_TAGS</name>
+					<defaultValue></defaultValue>
+				</hudson.model.StringParameterDefinition>
+				<hudson.model.StringParameterDefinition>
+					<name>PROFILE_FILE</name>
+					<defaultValue></defaultValue>
+				</hudson.model.StringParameterDefinition>
+			</parameterDefinitions>
+		</hudson.model.ParametersDefinitionProperty>
+	</properties>
+	<builders>
+		<hudson.tasks.Shell>
+		<command><![CDATA[#!/bin/bash
+date -u
+
+cd $RWBOT_PATH
+
+echo "RWBOT PATH" $RWBOT_PATH
+. vscg_carrier_vscgap3.6-134.sh 
+
+export PROJECT_NAME=$PROJECT_NAME
+export PYTHONPATH=$PYTHONPATH:$RWBOT_PATH/libs/python/lib/
+
+read -d '' JSON_INPUT <<"EOF"
+[
+    {
+         "testsuite_alias" : "$FEATURE_NAME",
+         "rwbot_run_target" : "$RWBOT_RUN_TARGET",
+         "rwbot_testsuite" : "$ROBOT_FILE_NAME",
+         "rwbot_rerun_failed" : "no",
+         "rwbot_output_results_dir" : "$OUTPUT_PATH",
+         "pybot_opts" : "-L TRACE $INCLUDE_TAGS --listener $RWBOT_PATH/RwListener.py",
+         "env_pre_exec" : "",
+         "run_testsuite" : "yes",
+         "testlink_testplan" : ""
+    }
+]
+EOF
+
+python -u runrobot.py --json_input="$JSON_INPUT" --proj_name=$PROJECT_NAME --feature_title=$FEATURE_NAME --upload_tl=$UPLOAD_TL --dryrun=$DRY_RUN --run_failed_only=$RUN_FAILED_ONLY
+
+exit 0]]>
+		</command>
+		</hudson.tasks.Shell>
+	</builders>
+	<publishers>
+		<hudson.plugins.robot.RobotPublisher plugin="robot@1.6.4">
+			<outputPath>$RWBOT_PATH/runrobot_results/$PROJECT_NAME</outputPath>
+			<passThreshold>100.0</passThreshold>
+			<unstableThreshold>90.0</unstableThreshold>
+		</hudson.plugins.robot.RobotPublisher>
+	</publishers>
+</project>
+

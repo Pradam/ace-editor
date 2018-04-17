@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="{% static 'style.css'%}">
+<head>
+<style>
+body {font-family: Arial, Helvetica, sans-serif;}
+
+.header {
+    background-color: #3465a4;
+    color: #ffffff;
+    padding: 15px;
+    height: 60px; 
+}
+
+.header h2{
+	color:#fff;
+}
+
+/* Full-width input fields */
+input[type=text], input[type=password] {
+    width: 50%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: block;
+	border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+/* Set a style for all buttons */
+button {
+    background-color: #4CAF50;
+	color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: 20%;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+
+/* Center the image and position the close button */
+img {
+    text-align: center;
+    margin: 24px 0 12px 0;
+   
+}
+
+.avatar {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 20%;
+}
+
+.formd {
+    display: block;
+}
+
+</style>
+</head>
+<body>
+<div  class="header">
+  <h2>Automation Accelerator</h2>
+</div>
+
+<img src="{% static 'Ruckus-Networks.jpg'%}" alt="Avatar" class="avatar">
+
+<div class="row"> 
+  <div class="col-ld-3 col-3">
+  </div>
+  <form class="formd" method="POST">
+	  {% csrf_token %}
+    <div class="container col-m-8 col-ld-5 col-5">
+      <label for="uname"><b>Username</b></label>
+      <input type="text" placeholder="Enter Username" name="uname" value='admin' required>
+      <label for="psw"><b>Password</b></label>
+      <input type="password" placeholder="Enter Password" name="psw" value='admin' required>
+    <button type="submit" formaction="/verifylogin/">Login</button>
+    <button type="submit" formaction="/register/">Register</button>
+    <label>
+      <input type="checkbox" checked="checked" name="remember"> Remember me
+    </label>
+    </div>
+  </form>
+</div>
+
+
+</body>
+</html>

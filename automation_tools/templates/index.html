@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ace Editor</title>
+    <style type="text/css">
+       #editor {
+        position: absolute;
+        width: 1820px;
+        height: 1090px;
+}
+
+</style>
+</head>
+<body>
+<div id="editor">some text</div>
+<script src="/static/js/src/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="/static/js/src/theme-twilight.js" type="text/javascript" charset="utf-8"></script>
+<script src="/static/js/src/mode-javascript.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/twilight");
+    var JavaScriptMode = ace.require("ace/mode/javascript").Mode;
+    editor.session.setMode(new JavaScriptMode());
+</script>
+</body>
+</html>

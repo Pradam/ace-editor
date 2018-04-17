@@ -1,0 +1,811 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title_block %} Editor {% endblock %}
+
+{% block extrahead %}
+
+  <meta name="csrf-token" content="{{ csrf_token }}"/>
+
+  <!-- MTREE SIDEBAR PLUGIN -->
+  <script src="{% static 'Mtree/jquery.mtree.js' %}" type="text/javascript"></script>
+  <script src="{% static 'ace/build/src/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+  <link href="{% static 'Mtree/mtree_custom.css' %}"  rel="stylesheet" "></script>
+<script src="{% static 'Mtree/velocity.min.js' %}" type="text/javascript"></script>
+       <script src="{% static 'ace/build/src/ace_grammar.min.js' %}"></script>
+		<script src="{% static 'ace/build/src/robot_grammar.js' %}"></script>
+		<script src="{% static 'ace/build/src/ext-language_tools.js' %}" type="text/javascript"></script>
+  <style type="text/css" media="screen">
+  
+  body {font-family: Arial, Helvetica, sans-serif;}
+
+.header {
+    background-color: #3465a4;
+    color: #ffffff;
+    padding: 15px;
+    height: 90px; 
+}
+
+.header h2{
+	color:#fff;
+}
+  button {
+    background-color: #4CAF50;
+	color: white;
+    padding: 5px 10px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: auto;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+    #editor { 
+        position: relative;
+        height:100%;
+    }
+    
+.form-style{
+    width: 100%;
+    font-size: 16px;
+    /*background: #495C70;*/
+    padding: 5px 5px 5px 5px;
+    border: 1px solid #53687E;
+}
+.form-style input[type=submit],
+.form-style input[type=button],
+.form-style input[type=text],
+.form-style input[type=email],
+.form-style textarea,
+.form-style label
+{
+    font-family: Georgia, "Times New Roman", Times, serif;
+    font-size: 16px;
+    color: #000;
+
+}
+.form-style label {
+    display:block;
+    margin-bottom: 10px;
+}
+.form-style label > span{
+    display: inline-block;
+    float: left;
+    width: 150px;
+}
+.form-style input[type=text],
+.form-style input[type=email]
+{
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed #83A4C5;
+    width: 200px;
+    outline: none;
+    padding: 0px 0px 0px 0px;
+    font-style: italic;
+}
+.form-style textarea{
+    font-style: italic;
+    padding: 0px 0px 0px 0px;
+    background: transparent;
+    outline: none;
+    border: none;
+    border-bottom: 1px dashed #83A4C5;
+    width: 275px;
+    overflow: hidden;
+    resize:none;
+    height:20px;
+}
+
+.form-style textarea:focus,
+.form-style input[type=text]:focus,
+.form-style input[type=email]:focus,
+.form-style input[type=email] :focus
+{
+    border-bottom: 1px dashed #D9FFA9;
+}
+
+.form-style input[type=submit],
+.form-style input[type=button],
+.form-style button{
+    background: #576E86;
+    border: none;
+    padding: 8px 10px 8px 10px;
+    border-radius: 5px;
+    color: #A8BACE;
+}
+.form-style input[type=submit]:hover,
+.form-style input[type=button]:hover,
+.form-style button:hover{
+background: #394D61;
+}
+    
+.tabs {
+
+    display:inline-block;
+}
+ 
+    /*----- Tab Links -----*/
+    /* Clearfix */
+    .tab-links:after {
+        display:block;
+        clear:both;
+        content:'';
+    }
+ 
+    .tab-links li {
+        margin:0px 1px;
+        float:left;
+        list-style:none;
+    }
+ 
+        .tab-links a {
+            padding:5px 15px;
+            display:inline-block;
+            border-radius:3px 3px 0px 0px;
+            background:#7FB5DA;
+            font-size:16px;
+            font-weight:600;
+            color:#4c4c4c;
+            transition:all linear 0.15s;
+            outline:none;
+        }
+ 
+        .tab-links a:hover {
+            background:#a7cce5;
+            text-decoration:none;
+        }
+ 
+    li.active a, li.active a:hover {
+        background:#fff;
+        color:#4c4c4c;
+    }
+ 
+    /*----- Content of Tabs -----*/
+    .tab-content {
+        padding:0px;
+        
+        border-radius:3px;
+        box-shadow:-1px 1px 1px rgba(0,0,0,0.15);
+        background:#fff;
+    }
+ 
+        .tab {
+            display:none;
+        }
+ 
+        .tab.active {
+            display:block;
+        }
+    
+    #popups{
+	display:none;
+	position:fixed;
+	z-index:999;
+	left:0;
+	top:0;
+	width:100%;
+	height:100%;
+	overflow:auto;
+	background: rgb(0,0,0)  transparent;
+	background: rgba(0,0,0,0.4);	
+}
+
+
+#createJJ ,#runJJ{
+    z-index: 1000;
+    height: 360px;
+    border: 1px single #65656B;
+    width: 640px;
+    background-color: white;
+    border-radius: 5px 5px;
+	-moz-border-radius: 5px; -webkit-border-radius: 5px; 
+    position: absolute;
+    display: none;
+    color: white;
+    top: 100px;
+    left: 50%;
+    margin-left: -320px;
+    
+}
+
+/*#allfeature #close_img, #defaultfeature #close_img, #szpostcommitfailure #close_img, #appostcommitfailure #close_img, #szdailyfailure #close_img, #apdailyfailure #close_img{*/
+#popups #close_img{
+	float:right;
+	margin-right:-20px;
+	margin-top:-20px;
+}
+
+/*#allfeature h2, #defaultfeature h2, #szpostcommitfailure h2, #appostcommitfailure h2, #szdailyfailure h2, #apdailyfailure h2{*/
+#popups h2{
+	color:white;
+	text-decoration:none;
+	font-size:20px;
+	font-weight:normal;
+	padding:8px 20px;	
+	width:100%;
+	background-color:#3465a4;
+	border-radius: 5px 5px 0px 0px;
+	-moz-border-radius: 5px 5px 0px 0px; -webkit-border-radius: 5px 5px 0px 0px; 
+}
+
+#popups table{
+	padding-top:10px;
+	border:0px;	
+	width:auto;
+}
+
+ /*#szpostcommitfailure table, #appostcommitfailure table, #szdailyfailure table, #apdailyfailure table{*/
+ #popups table{
+ 
+ 	width:auto;
+ 	margin-left:20px;
+ 	margin-right:20px;
+ 	margin-top:10px;
+ 	margin-bottom:20px;
+ 	
+ }
+
+#popups td{
+	border:0px;
+	width:50%;
+	text-align:left;
+	padding:0px 30px;
+	color:#333;
+}
+
+/*#szpostcommitfailure td, #appostcommitfailure td, #szdailyfailure td, #apdailyfailure td{*/
+#popups td{
+	min-width:100px;
+	padding-left:10px;
+	padding-right:10px;
+}
+    
+    
+    
+</style>
+{% endblock %}
+
+
+{% block extrajs %}
+var publicAPI ={{publicapi_context|safe}};
+
+var editor;
+var active_element = null;
+var Range = require("ace/range").Range;
+$(document).ready( function (){
+
+    jQuery('.tabs .tab-links a').on('click', function(e)  {
+        var currentAttrValue = jQuery(this).attr('href');
+ 
+        // Show/Hide Tabs
+        jQuery('.tabs ' + currentAttrValue).show().siblings().hide();
+ 
+        // Change/remove current tab to active
+        jQuery(this).parent('li').addClass('active').siblings().removeClass('active');
+ 
+        e.preventDefault();
+    });
+
+
+$('ul.mtree').mtree();
+        robot_grammar["Lex"]["PublicAPI"]["tokens"]=[]
+        {% for lib,func_list in sidebar_functions.items %}
+                {% if lib == 'PublicAPI' %}
+                        robot_grammar["Lex"]["PublicAPI"]["tokens"]={{func_list|safe}};
+                {% endif %}
+        {% endfor %}
+    editor = ace.edit("editor");
+    editor.setTheme("ace/theme/xcode");
+    		session = editor.getSession();
+		//Get the robot Mode
+		mode = AceGrammar.getMode( robot_grammar );
+		console.log("Mode:" + mode);
+		console.log("Token:" + mode.getTokenizer());
+		//Enabe External Mode
+		ace.config.loadModule("ace/ext/language_tools", function() {
+			editor.setOptions({ 
+				enableBasicAutocompletion: false,
+				enableSnippets: false,
+				enableLiveAutocompletion: true,
+				tabSize : 4,
+				useSoftTabs : true,
+				showPrintMargin : false,
+				fontSize : 12
+			});
+			//Set options for editor
+			mode.matcher( editor );
+			mode.autocompleter.options = {prefixMatch:false, caseInsensitiveMatch:false, dynamic:false}; 
+			editor.clearSelection();
+			editor.setValue( '', -1 );
+			
+			session.setMode( mode );
+			session.setFoldStyle("markbegin");
+		});
+	
+		editor.session.on('change', function(delta) {
+			var currline = editor.getSelectionRange().start.row;
+			
+			var wholelinetxt = editor.session.getLine(currline);
+			tokens = editor.session.getTokens(currline).filter(function(t) {
+	    		return t.type == "keyword";
+			});
+			console.log("******"+wholelinetxt);
+			//console.log(editor.session.getTokens(currline));
+			if (tokens.length>0 && tokens[tokens.length-1].type != "text" ){
+				//console.log(tokens[tokens.length-1].value);
+				str=wholelinetxt.substring(delta.start.column, delta.end.column);
+				if(str.length>1 && str in publicAPI){
+					$('#var_desc').html("<pre>"+publicAPI[str]["desc"]+"</pre>");
+					params = draw_forms(publicAPI[str]["man_args"], publicAPI[str]["opt_args"]);
+					col_pos = publicAPI[str]["man_args"][0].length + 3;
+					if(publicAPI[str]["opt_args"].length > 0 && publicAPI[str]["man_args"].length >0){
+					update_mode();
+					}
+					
+					//console.log("str***"+str);
+					editor.session.insert(delta.end,params);
+					//editor.session.insertLines(currline, str+"    "+params);
+					
+					//alert(document.getElementById('line'+currline));
+					//console.log(document.getElementById('line'+currline));
+					//document.getElementById('line'+currline).innerHTML="<span>"+str+"</span>    <span>"+params+"</span>";
+					
+					//console.log(document.getElementById('ace_text-input').val());
+					//document.getElementById('ace_text-input').val(str+"    "+params);
+					//console.log(document.getElementById('line'+currline));
+					editor.moveCursorTo(currline,col_pos);
+					//alert(document.getElementById('line'+currline));
+					console.log(document.getElementById('line'+currline));
+
+				}
+				//alert(editor.session.getLine(currline));
+				editor_to_form_map(editor.session.getLine(currline));
+				//document.getElementById('line'+currline).innerHTML="<span>"+str+"</span>    <span>"+params+"</span>";
+				console.log("after STR" + str);
+				//console.log(document.getElementById('line'+currline));
+			}
+			
+			var row_details=editor.session.getLine(currline);
+			console.log("Cursor_pos" + editor.getCursorPosition());
+		    console.log("Row" + row_details + currline);
+		    if(active_element){
+				//$('#'+active_element.id).focus();
+			}
+		
+		});
+		
+		editor.on("mouseup", function() {
+			var currline = editor.getSelectionRange().start.row;
+			//alert(editor.session.getLine(currline));
+			editor_to_form_map(editor.session.getLine(currline),'mouseup');
+		});
+
+//$("#ace_text-input").keyup(function(e) {
+$("#editor #ace_text-input").keyup(function(e) {
+	code = e.keyCode || e.which;
+	if(code == 38){
+		console.log('up arrow')
+		var currline = editor.getSelectionRange().start.row;
+		//alert(editor.session.getLine(currline));
+		editor_to_form_map(editor.session.getLine(currline),'keyup');
+	}else if(code == 40){
+		console.log('down arrow')
+		var currline = editor.getSelectionRange().start.row;
+		//alert(editor.session.getLine(currline));
+		editor_to_form_map(editor.session.getLine(currline),'keyup');
+	}
+  });
+
+
+editor.on("mousemove", function(e) { 
+ var pos = e.getDocumentPosition() 
+ var token = e.editor.session.getTokenAt(pos.row, pos.column) 
+ if (token && token.type == "markup.underline") { 
+   console.log(token) 
+ } 
+}); 
+  $("#editor").droppable({
+
+    activeClass: "ui-state-default",
+    hoverClass: "ui-state-hover",
+    accept: ":not(.ui-sortable-helper)",
+
+    drop: function(event, ui) {
+      alert(ui);
+      var pos = editor.renderer.screenToTextCoordinates(event.clientX, event.clientY)
+      editor.session.insert(pos, ui.draggable.text())
+      return true
+    }
+    });
+	  draggable_obj = document.getElementsByClassName("draggable");
+
+	  for(let i = 0; i < draggable_obj.length; i++) {
+  			draggable_obj[i].addEventListener("dragstart", function(e) {
+    		e.dataTransfer.setData("text/plain", this.textContent)
+  		})
+	}
+    $("#gen").click(function(){
+	var testcase=editor.session.getValue();
+	console.log(testcase);
+    	$.ajaxSetup({
+            headers:
+            { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+        });
+        $.post("/generatefile",
+        {
+	  tc: testcase
+        },
+        function(Object,status){
+            alert("Suite File: " + Object["object"]);
+        });
+    });
+
+    /*
+    $("#create_job").click(function(){
+    	$.ajax({
+	header: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+	    url: "/createjob",
+	    method: "POST",
+	    dataType: "json"
+	})
+	.done(function(data){
+	    if (data['status'] == 'PASS')
+	    	console.log('Job Created');
+	    else
+	    	console.log('Job Creation Failed');
+	    console.log('Job Name : ' + data['job_name']);
+	});
+    });
+
+    $("#run_job").click(function(){
+        window.open("/runjob", "Execution Window","width=800,height=800");	
+    });
+	*/	  
+    editor.focus();
+	  
+});
+
+
+function editor_to_form_map(line, action=''){
+	line = line.trim();
+	editline = line;
+	if(line.length>0){
+		if(line.indexOf('|')>-1){
+			line = line.split('|');
+			lineSplit = line[0].split(/\s+/);
+		}else{
+			lineSplit = line.split(/\s+/)
+		}
+		if(!(lineSplit[0] in publicAPI)){
+		draw_forms([],[]);
+		return;
+		}
+		draw_forms(publicAPI[lineSplit[0]]["man_args"], publicAPI[lineSplit[0]]["opt_args"]);
+		draw_robotkeyword();
+		for(i=1;i < lineSplit.length;i++){
+			param = lineSplit[i].split('=');
+			//alert('#'+param[0]);
+			$('#'+param[0]).val(param[1]);
+		}
+		if(editline.indexOf('|')>-1){
+			robotSplit = line[1].split(/\s+/);
+			//document.robot_form.robotradio.value= robotSplit[0];
+			$("input[name=robotradio][value=" + robotSplit[0] + "]").prop('checked', true);
+			document.getElementById(robotSplit[0]).value = robotSplit[1];
+		}
+		
+	}
+}
+
+function onParamFormChange(fobj){
+	active_element = document.activeElement;
+	console.log("***************");
+	console.log(active_element.id);
+	//alert(active_element);
+	var currline = editor.getSelectionRange().start.row;
+	form_to_editor_map(editor.session.getLine(currline), fobj);
+	if(active_element){
+		$('#'+active_element.id).focus();
+	}
+}
+
+function form_to_editor_map(line, fobj){
+	curobj = new Object();
+	curobj.row = editor.getSelectionRange().start.row;
+	curobj.column = 0;
+	lineSplit = line.split(/\s+/);
+	formserialize = $('#paramform').serialize();
+	params = formserialize.replace(/\&/gi, "  ");
+	//alert(lineSplit[0]+'  '+params);
+	//editor.session.insertLine(curobj, lineSplit[0]+'  '+params);
+	editor.session.replace(new Range(curobj.row, 0, curobj.row, Number.MAX_VALUE), lineSplit[0]+'   '+params)
+
+}
+
+function onRobotFormChange(fobj){
+	active_element = document.activeElement;
+	var currline = editor.getSelectionRange().start.row;
+	robotform_to_editor_map(editor.session.getLine(currline), fobj);
+	if(active_element){
+		$('#'+active_element.id).focus();
+	}
+}
+
+function robotform_to_editor_map(line, fobj){
+	curobj = new Object();
+	curobj.row = editor.getSelectionRange().start.row;
+	curobj.column = 0;
+	line=line.split('|')[0]
+	editor.session.replace(new Range(curobj.row, 0, curobj.row, Number.MAX_VALUE), line+'|'+document.robot_form.robotradio.value+' '+ $('#'+document.robot_form.robotradio.value).val())
+
+}
+
+function update_mode() { 
+	mode = AceGrammar.getMode( robot_grammar );
+	mode.matcher( editor );
+	mode.autocompleter.options = {prefixMatch:false, caseInsensitiveMatch:false, dynamic:false}; 
+	session.setMode( mode );
+}
+
+function draw_forms(man_args, opt_args){
+	var params = " ";
+	robot_grammar["Lex"]["optional_params"]["tokens"] = [];
+        fstr = "<form id='paramform' oninput='onParamFormChange(this)' class='form-style'>";
+        if(man_args.length){
+        	fstr += "<fieldset><Legend>Mandatory Params</Legend><table>";
+			col_pos = man_args[0].length + 4;
+        	for(arg in man_args){
+				fstr+='<tr><td>'+man_args[arg]+'</td><td>:</td><td><input type="text" id='+man_args[arg]+' name='+man_args[arg]+'></td></tr>';
+				params+="  " + man_args[arg] + "=";
+        	}
+        	fstr+="</table></fieldset>";
+        }
+        if(opt_args.length){
+        	fstr+="<fieldset><Legend>Optional Params</Legend><table>";
+        	for(arg in opt_args){
+                fstr+='<tr><td>'+opt_args[arg]+'</td><td>:</td><td><input type="text" id='+opt_args[arg]+' name='+opt_args[arg]+'></td></tr>';
+				robot_grammar["Lex"]["optional_params"]["tokens"].push(opt_args[arg]);
+				params+="  " + opt_args[arg] + "=";
+        	}
+			console.log(robot_grammar["Lex"]["optional_params"]["tokens"]);
+        	fstr+="</table></fieldset>";
+        }
+        //fstr+="</form>";
+    	//fstr+="<button type='button' id='serialize' onclick='save_form()'>Save Step</button>";
+    	fstr+="</form>";
+        
+        if(man_args.length==0 && opt_args.length==0){
+                fstr="No Params Required";               
+        }
+	
+        $('#var_form').html(fstr);
+        
+	return params
+}
+
+function draw_robotkeyword(){
+	str="<form id='robotform' name='robot_form'  oninput='onRobotFormChange(this)'><table>";
+	str+="<tr><td><input type=radio name='robotradio' value='Expect_error'> Expect Error</td><td><input type='text' id='Expect_error' name='Expect_error'></td></tr>";
+	str+="</table></form>";
+	$("#robot_keyword").html(str);
+}
+
+function save_form(){
+	alert("");
+	serializedString = $('#paramform').serialize(); 
+	console.log("serialSTR:  " + serializedString); 
+	$.ajaxSetup({
+            headers:
+            { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+        });
+        $.post("/savestep",
+        {
+          tstep: serializedString
+        },
+        function(Object,status){
+            alert("Suite File: " + Object["object"]);
+        });
+}
+
+
+function close_allpopups(){
+	document.getElementById("popups").style.display="none";
+}
+document.onkeydown=function(e){
+	var e=window.event || e
+	if(e.keyCode == 27){
+		document.getElementById("popups").style.display="none";
+	}
+}
+function open_popups(popup){
+ var popup_div = {0:"createJJ",1:"runJJ"}
+	document.getElementById("popups").style.display='block';
+	for(key in popup_div){
+		document.getElementById(popup_div[key]).style.display='none';
+	}
+
+	document.getElementById(popup).style.display="block";
+}      
+
+var job_name;
+function createJJ(){
+    close_allpopups();
+    var x = document.getElementById("createJJform");
+    var job_details = {}
+    for ( i=0;i<x.length;i++)
+        job_details[x.elements[i].name] = x.elements[i].value;
+    job_name = job_details['project_name'] + '-' + job_details['feature_name'];
+    $.ajax({
+	header: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+	url: "/createjob",
+	method: "POST",
+	dataType: "json",
+	data: job_details
+    })
+    .done(function(data){
+        if (data['status'] == 'PASS')
+	     console.log('Job Created');
+	else
+	    	console.log('Job Creation Failed');
+	console.log('Job Name : ' + data['job_name']);
+	});
+}
+
+function runJJ(){
+    close_allpopups();
+    var x = document.getElementById("runJJform");
+    var job_name = x.elements[0].value;
+    var execute_url = '/runjob?job_name='+job_name ;
+    window.open(execute_url, "Execution Window","width=800,height=800");	
+}
+
+
+{% endblock %}
+
+{% block body_block%} 
+{% csrf_token %}
+<div id="popups">
+
+
+
+<div id="createJJ">
+<a href="javascript:close_allpopups()">
+<img id="close_img" src="/static/image/close.png" alt="close">
+</a>
+	<h2>Create Jenkins Job</h2><hr>
+	<form class="form" id="createJJform">	
+	<table>
+		<tr>
+			<td><label for="uname">IP</label></td>
+			<td><input type="text" placeholder="Jenkins IP" name="jen_ip" required value="{{ws_obj.ip}}"></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Username</label></td>
+			<td><input type="text" placeholder="Jenkins Username" name="jen_uname" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Password</label></td>
+			<td><input type="text" placeholder="Jenkins Password" name="jen_passwd" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Rwbot Path</label></td>
+			<td><input type="text" placeholder="Rwbot Path" name="rwbot_path" required value='{{ws_obj.path}}'></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Rwbot Target</label></td>
+			<td><input type="text" placeholder="Rwbot Target" name="rwbot_target" required></td>
+		</tr>
+		<tr>
+			<td><label for="uname">Feature Name</label></td>
+			<td><input type="text" placeholder="Feature Name" name="feature_name" required></td>
+		<tr>
+			<td><label for="uname">Project Name</label></td>
+			<td><input type="text" placeholder="Project Name" name="project_name" required></td>
+		</tr>
+		</tr>
+		<tr> 
+			<td></td>
+			<td><button type="button" id="CreateWS" onclick='createJJ()'>Create</button></td>
+		</tr>
+	</table>
+	</form>
+	</div>
+	
+<div id="runJJ">
+<a href="javascript:close_allpopups()">
+<img id="close_img" src="/static/image/close.png" alt="close">
+</a>
+	<h2>Add Testsuite</h2><hr>
+	<form class="form" id="runJJform">	
+	<table>
+		<tr>
+			<td><label for="uname">Job Name</label></td>
+			<td><input type="text" placeholder="Job Name" name="jen_jobname" required value=""></td>
+		</tr>
+
+		<tr> 
+			<td></td>
+			<td><button type="button" id="CreateTS" onclick='runJJ()'>Run</button></td>
+		</tr>
+	</table>
+	</form>
+	
+	</div>
+	
+	
+</div>
+
+
+
+
+<div class='row header'>
+	<div  class="col-6 col-ld-6 col-m-12 ">
+	  <h2>Automation Accelerator</h2>
+	</div> 
+	<div class="col-6 col-ld-6 col-m-12">
+		<div style="float:right;width:100px;color:#fff;">{{username|title}}&nbsp;&nbsp;<a href='/logout'>Logout</a></div>
+	</div>
+	<div class="col-6 col-ld-6"></div>
+		<div class='col-6 col-ld-6'>
+		<button>Save</button>&nbsp;<button id="gen">Generate File</button>&nbsp;<button id="create_job" onclick='open_popups("createJJ")'>Create Jenkins Job</button>&nbsp;<button id="run_job" onclick='open_popups("runJJ")'>Run</button>
+        	
+	</div>
+</div>
+	<div class='row'>
+		<div class='sidebar col-m-1 col-ld-2 col-2'>
+			<ul class="mtree skinny"  id='draggable'>
+			<li><a>Config</a>
+			<ul>
+	{% for lib,func_list in sidebar_functions.items %}
+	    <li><a href='#'> {{lib}} </a>
+	    <ul>
+	    {% for api in func_list  %}
+	        <li><a class='draggable' href="#">{{api}}</a></li>
+	    {% endfor %}
+	   </ul>
+	   </li>
+	{% endfor %}
+</ul></li></ul>
+		</div>
+
+		<div class='codearea col-m-12 col-ld-7 col-7'>
+			<div style="float:right;"></div>
+			<div id='editor'></div>
+		</div>
+
+		<div class='tabs varpanel col-m-12 col-ld-3 col-3'>
+		<div class='tabs'>
+		<ul class="tab-links">
+        <li class="active"><a href="#tab1">Form</a></li>
+        <li><a href="#tab2">Description</a></li>
+    </ul>
+		
+	<div class="tab-content">	
+		<div id='tab1' class='tab active'>
+			<div id="var_form"></div>
+		</div>
+                <div id='tab2' class='tab'>
+			<div id="var_desc">
+			</div>
+
+		</div>
+		</div>
+		</div>
+		<br><br>
+		<div>
+		<h4>Robot keyword:</h4>
+		<div id='robot_keyword'>
+		
+		</div></div>
+		
+	</div>
+	</div>
+<div class='row'>
+	<div class='footer'>
+		 <p> i am the footer </p>
+	</div>
+</div>
+{% endblock %}
+
